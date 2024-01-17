@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<head>
+    <title>JWT Test w/flask</title>
+</head>
+<body>
+
+    <div>
+        <h2>Really bland login</h2>
+        <p>User ID:</p><input id="uidfield"></a>
+        <p>Password:</p><input type="password" id="pfield"></a>
+        <button id="loginbtn">Log In</button>
+    </div>
+    <br><br><br>
+    <div>
+        <button id="statcheck">Am I authenticated?</button><p id="a_status"></p>
+    </div>
+    <div>
+        <button id="r_cookiedata">Render cookie data</button>
+        <p id="c_data"></p>
+    </div>
+</body>
+<script>
+    function setCookie(name, value, days) {
+        var expires = "";
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    }
+
+    function getCookie(cname) {
+  let name = cname + "=";
+  let decodedCookie = decodeURIComponent(document.cookie);
+  let ca = decodedCookie.split(';');
+  for(let i = 0; i <ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+}
+
+    document.getElementById("loginbtn").onclick = function() {
+        fetch('http://localhost:5000/gen_token', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            username: document.getElementById("uidfield").value,
+            password: document.getElementById("pfield").value
+        })
+        })
+        .then(response => {
+        if (!response.ok) {
+        throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json();
+        })
+        .then(data => {
+            setCookie("TOKEN", data.token, 30)
+        })
+        .catch(error => {
+        console.error('There has been a problem with your fetch operation:', error);
+        });
+
+    }
+
+    document.getElementById("r_cookiedata").onclick = function() {
+        document.getElementById("c_data").innerHTML = document.cookie.toString()
+    }
+
+    document.getElementById("statcheck").onclick = function() {
+        fetch("http://localhost:5000/auth_check", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                token: getCookie("TOKEN"),
+            })
+        }).then(response => {
+        return response.json();
+        })
+        .then(data => {
+            if(data.authstatus == 1) {
+                alert("You are authenticated!")
+            } else {
+                alert("You are not authenticated")
+            }
+        })
+        .catch(error => {
+            console.error('There has been a problem with your fetch operation:', error);
+        });
+    }
+</script>
